@@ -15,6 +15,7 @@ kotlinSerialization = "1.6.3"
 retrofit = "2.11.0"
 material2 = "1.7.6"
 runtimeLivedata = "1.7.6"
+litertSupportApi = "1.2.0"
 
 
 [libraries]
@@ -41,6 +42,7 @@ androidx-compose-material-icons-extended = { group = "androidx.compose.material"
 
 androidx-navigation-compose = { group =  'androidx.navigation', name = 'navigation-compose', version.ref = 'navigationCompose' }
 kotlinx-serialization-json = { group = 'org.jetbrains.kotlinx', name = 'kotlinx-serialization-json-jvm', version.ref = 'kotlinSerialization' }
+litert-support-api = { group = "com.google.ai.edge.litert", name = "litert-support-api", version.ref = "litertSupportApi" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
