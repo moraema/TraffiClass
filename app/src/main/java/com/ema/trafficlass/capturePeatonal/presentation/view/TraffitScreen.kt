@@ -22,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -65,7 +66,9 @@ fun TraffitScreen(onLogout: () -> Unit, homeViewModel: traffitViewModel) {
     val classifier = remember { TrafficClassifier(context) }
     val resultado by homeViewModel.resultado.collectAsState()
     val topResultados by homeViewModel.topResultados.collectAsState()
+    var capturedBitmap by remember { mutableStateOf<Bitmap?>(null) }
     val launcher = rememberImageCaptureLauncher { bitmap ->
+        capturedBitmap = bitmap  //
         val resultados = classifier.classifyTop3(bitmap)
         homeViewModel.setResultadoPrincipal(resultados.firstOrNull()?.etiqueta ?: "Sin resultado")
         homeViewModel.setTopResultados(resultados)
@@ -86,7 +89,7 @@ fun TraffitScreen(onLogout: () -> Unit, homeViewModel: traffitViewModel) {
         ) {
             AppHeader(onLogout, primaryBlue)
             ScreenTitle()
-            CameraSection(launcher)
+            CameraSection(launcher,capturedBitmap)
             ResultadoAnalisisCard(resultado)
             TopResultadosCard(resultados = topResultados)
             AdvertenciaBanner()
@@ -131,7 +134,7 @@ fun ScreenTitle() {
 }
 
 @Composable
-fun CameraSection(launcher: ActivityResultLauncher<Void?>) {
+fun CameraSection(launcher: ActivityResultLauncher<Void?>, capturedBitmap: Bitmap?) {
     val context = LocalContext.current
     val primaryBlue = Color(0xFF0078D7)
 
@@ -169,21 +172,29 @@ fun CameraSection(launcher: ActivityResultLauncher<Void?>) {
                 .aspectRatio(1f)
                 .clip(RoundedCornerShape(16.dp))
                 .border(2.dp, primaryBlue.copy(alpha = 0.5f), RoundedCornerShape(16.dp)),
-            contentAlignment = Alignment.BottomCenter
+            contentAlignment = Alignment.Center
         ) {
-            Button(
-                onClick = { requestPermission() }, // 👈 Primero pedimos permiso
-                modifier = Modifier
-                    .size(64.dp)
-                    .padding(bottom = 16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = primaryBlue),
-                contentPadding = PaddingValues(0.dp)
-            ) {
-                Icon(Icons.Filled.PhotoCamera, contentDescription = "Capturar", tint = Color.White, modifier = Modifier.size(32.dp))
+            if (capturedBitmap != null) {
+                androidx.compose.foundation.Image(
+                    bitmap = capturedBitmap.asImageBitmap(),
+                    contentDescription = "Foto capturada",
+                    modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(16.dp))
+                )
+            } else {
+                Button(
+                    onClick = { requestPermission() },
+                    modifier = Modifier.size(64.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = primaryBlue),
+                    contentPadding = PaddingValues(0.dp)
+                ) {
+                    Icon(Icons.Filled.PhotoCamera, contentDescription = "Capturar", tint = Color.White, modifier = Modifier.size(32.dp))
+                }
             }
         }
+
     }
 }
+
 
 
 @Composable
