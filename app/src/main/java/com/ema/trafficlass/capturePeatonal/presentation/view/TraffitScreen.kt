@@ -1,17 +1,17 @@
 package com.ema.trafficlass.capturePeatonal.presentation.view
 import com.ema.trafficlass.core.permissions.rememberPermissionRequester
 import android.widget.Toast
-import android.app.Activity
-import android.content.Intent
+import android.speech.tts.TextToSpeech
+import java.util.Locale
 import android.graphics.Bitmap
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.Role.Companion.Image
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -33,46 +34,89 @@ import com.ema.trafficlass.R
 import com.ema.trafficlass.capturePeatonal.presentation.viewModel.Clasificacion
 import com.ema.trafficlass.capturePeatonal.presentation.viewModel.traffitViewModel
 import com.ema.trafficlass.domain.TrafficClassifier
+import kotlinx.coroutines.launch
 
 val señalSignificados = mapOf(
-    "Alto" to "Indica que debes detenerte completamente.",
-    "Cinturon" to "Obligatorio el uso del cinturón de seguridad.",
-    "Cruce Peatonal" to "Zona destinada al paso de peatones.",
-    "Cruce de Ferrocarril" to "Precaución, cruce de trenes cercano.",
-    "Discapacidad" to "Zona reservada para personas con discapacidad.",
-    "Doble Sentido" to "Vía con circulación en ambos sentidos.",
-    "Limite de velocidad" to "Indica la velocidad máxima permitida.",
-    "No Estacionarse" to "Prohibido estacionar en esta área.",
-    "No cruzar" to "Zona prohibida para el paso de peatones.",
-    "Parada de autobus" to "Área designada para paradas de autobuses.",
-    "Paso de Ciclistas" to "Cruce o circulación frecuente de bicicletas.",
-    "Prohibido arrojar basura" to "Mantén limpio, no arrojar desechos.",
-    "Prohibido celulares" to "Prohibido el uso de celulares.",
-    "Prohibido motos" to "Zona no permitida para motocicletas.",
-    "Prohibido seguir" to "No está permitido seguir derecho.",
-    "Tope" to "Reductor de velocidad en el camino.",
-    "Uno x uno" to "Avance alternado entre vehículos.",
-    "Vuelta Prohibida" to "Giro no permitido en esta dirección.",
-    "WC" to "Baños públicos disponibles.",
-    "Zona Escolar" to "Precaución, tránsito de estudiantes."
+    "Alto" to "Debes detenerte por completo antes de continuar.",
+    "Cinturon" to "Recuerda usar el cinturón de seguridad siempre que viajes.",
+    "Cruce Peatonal" to "Estás en una zona de cruce. Cruza con precaución.",
+    "Cruce de Ferrocarril" to "Ten cuidado, puede pasar un tren. Detente y observa.",
+    "Discapacidad" to "Área reservada para personas con discapacidad. Respeta el espacio.",
+    "Doble Sentido" to "La vía tiene tráfico en ambas direcciones. Mira a ambos lados.",
+    "Limite de velocidad" to "Hay un límite de velocidad en esta zona. Modera tu paso.",
+    "No Estacionarse" to "No se permite estacionar aquí. Mantén libre el paso.",
+    "No cruzar" to "Está prohibido el paso a cualquier persona no autorizada.",
+    "Parada de autobus" to "Zona de parada de autobuses. Atención a los vehículos.",
+    "Paso de Ciclistas" to "Cruce frecuente de ciclistas. Avanza con cuidado.",
+    "Prohibido arrojar basura" to "Prohibido tirar basura. Mantén limpio el lugar.",
+    "Prohibido celulares" to "Evita usar el celular en esta zona por tu seguridad.",
+    "Prohibido motos" to "No se permite el paso de motocicletas por aquí.",
+    "Prohibido seguir" to "Debes detenerte, no está permitido continuar en esta dirección.",
+    "Tope" to "Hay un tope en el camino. Reduce la velocidad.",
+    "Uno x uno" to "Pasa de forma alternada con otros vehículos. Turno por turno.",
+    "Vuelta Prohibida" to "No está permitido girar en esta dirección.",
+    "WC" to "Baños públicos disponibles cerca de esta zona.",
+    "Zona Escolar" to "Zona escolar. Reduce la velocidad y pon atención a los niños."
 )
+
+val señalImagenes = mapOf(
+    "Alto" to R.drawable.uno_uno,
+    "Cinturon" to R.drawable.cinturon,
+    "Cruce Peatonal" to R.drawable.cruce_peatonal,
+    "Cruce de Ferrocarril" to R.drawable.cruce_ferrocarril,
+    "Discapacidad" to R.drawable.discapacidad,
+    "Doble Sentido" to R.drawable.doble_sentido,
+    "Limite de velocidad" to R.drawable.limite_velocidad,
+    "No Estacionarse" to R.drawable.no_estacionarse,
+    "No cruzar" to R.drawable.no_cruzar,
+    "Parada de autobus" to R.drawable.parada_autobus,
+    "Paso de Ciclistas" to R.drawable.paso_ciclistas,
+    "Prohibido arrojar basura" to R.drawable.prohibido_basura,
+    "Prohibido celulares" to R.drawable.prohibido_celulares,
+    "Prohibido motos" to R.drawable.prohibido_motos,
+    "Prohibido seguir" to R.drawable.prohibido_seguir,
+    "Tope" to R.drawable.tope,
+    "Uno x uno" to R.drawable.uno_uno,
+    "Vuelta Prohibida" to R.drawable.vuelta_prohibida,
+    "WC" to R.drawable.wc,
+    "Zona Escolar" to R.drawable.zona_escolar
+)
+
 
 @Composable
 fun TraffitScreen(onLogout: () -> Unit, homeViewModel: traffitViewModel) {
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
     val lightBlue = Color(0xFFF0F8FF)
     val primaryBlue = Color(0xFF0078D7)
     val scrollState = rememberScrollState()
     val context = LocalContext.current
+    val mostrarDialogo = remember { mutableStateOf(false) }
+    val tts = remember {
+        TextToSpeech(context, null).apply {
+            language = Locale("es", "MX")
+        }
+    }
+
     val classifier = remember { TrafficClassifier(context) }
     val resultado by homeViewModel.resultado.collectAsState()
     val topResultados by homeViewModel.topResultados.collectAsState()
     var capturedBitmap by remember { mutableStateOf<Bitmap?>(null) }
+
     val launcher = rememberImageCaptureLauncher { bitmap ->
-        capturedBitmap = bitmap  //
+        capturedBitmap = bitmap
         val resultados = classifier.classifyTop3(bitmap)
-        homeViewModel.setResultadoPrincipal(resultados.firstOrNull()?.etiqueta ?: "Sin resultado")
+        val principal = resultados.firstOrNull()
+        homeViewModel.setResultadoPrincipal(principal?.etiqueta ?: "Sin resultado")
         homeViewModel.setTopResultados(resultados)
+
+        // 🗣️ Hablar resultado
+        principal?.significado?.let { significado ->
+            tts.speak(significado, TextToSpeech.QUEUE_FLUSH, null, null)
+        }
     }
+
+
 
 
     Box(
@@ -87,32 +131,115 @@ fun TraffitScreen(onLogout: () -> Unit, homeViewModel: traffitViewModel) {
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            AppHeader(onLogout, primaryBlue)
+            AppHeader(onLogout, primaryBlue, mostrarDialogo)
             ScreenTitle()
             CameraSection(launcher,capturedBitmap)
             ResultadoAnalisisCard(resultado)
+            if (capturedBitmap != null || resultado != null) {
+                Button(
+                    onClick = {
+                        homeViewModel.limpiarResultados()
+                        capturedBitmap = null
+                        coroutineScope.launch {
+                            snackbarHostState.showSnackbar("Resultados limpiados")
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF5350))
+                ) {
+                    Icon(Icons.Default.Clear, contentDescription = "Limpiar", tint = Color.White)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Limpiar Resultado", color = Color.White)
+                }
+            }
             TopResultadosCard(resultados = topResultados)
             AdvertenciaBanner()
         }
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 16.dp)
+        )
+        if (mostrarDialogo.value) {
+            AlertDialog(
+                onDismissRequest = { mostrarDialogo.value = false },
+                confirmButton = {
+                    TextButton(onClick = { mostrarDialogo.value = false }) {
+                        Text("Cerrar")
+                    }
+                },
+                title = { Text("Clases detectadas", fontWeight = FontWeight.Bold) },
+                text = {
+                    Column(
+                        modifier = Modifier
+                            .verticalScroll(rememberScrollState())
+                            .padding(vertical = 8.dp)
+                    ) {
+                        señalSignificados.forEach { (nombre, significado) ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                señalImagenes[nombre]?.let { resId ->
+                                    Image(
+                                        painter = painterResource(id = resId),
+                                        contentDescription = nombre,
+                                        modifier = Modifier
+                                            .size(40.dp)
+                                            .padding(end = 12.dp)
+                                    )
+                                }
+
+                                Column {
+                                    Text(
+                                        text = nombre,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 14.sp
+                                    )
+                                    Text(
+                                        text = significado,
+                                        fontSize = 12.sp,
+                                        color = Color.DarkGray
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            )
+        }
+
     }
 }
 
 @Composable
-fun AppHeader(onLogout: () -> Unit, primaryBlue: Color) {
+fun AppHeader(onLogout: () -> Unit, primaryBlue: Color, mostrarDialogo: MutableState<Boolean>) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(bottom = 16.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        IconButton(onClick = onLogout) {
-            Icon(Icons.Default.ArrowCircleLeft, contentDescription = "Volver", tint = Color.Black)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onLogout) {
+                Icon(Icons.Default.ArrowCircleLeft, contentDescription = "Volver", tint = Color.Black)
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("TraffiClass", color = primaryBlue, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+            Icon(Icons.Filled.StackedBarChart, contentDescription = null, tint = primaryBlue, modifier = Modifier.size(20.dp))
         }
-        Spacer(modifier = Modifier.width(8.dp))
-        Text("TraffiClass", color = primaryBlue, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-        Icon(Icons.Filled.StackedBarChart, contentDescription = null, tint = primaryBlue, modifier = Modifier.size(20.dp))
+        IconButton(onClick = { mostrarDialogo.value = true }) {
+            Icon(Icons.Default.Help, contentDescription = "Ayuda", tint = Color.Black)
+        }
     }
 }
+
 
 @Composable
 fun ScreenTitle() {
